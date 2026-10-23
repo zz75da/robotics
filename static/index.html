@@ -58,11 +58,10 @@
       </section>
       <section class="wide">
         <h2>3 · Anonymiser une vidéo</h2>
-        <p>Importez MP4, AVI, MOV ou MKV (250 Mo maximum). Le mode visage utilise YuNet sur l’image et quatre recadrages agrandis, avec un seuil de détection plus permissif et une mosaïque renforcée ; le traitement peut prendre plus longtemps. Le modèle (environ 233 Ko) est téléchargé une fois depuis OpenCV Zoo.</p>
-        <div class="notice">Un détecteur amélioré peut encore manquer un visage, notamment s’il est masqué, très petit, flou ou hors champ. Vérifiez visuellement la vidéo complète avant tout partage ; le traitement automatique ne garantit pas à lui seul la conformité RGPD.</div>
+        <p>Importez MP4, AVI, MOV ou MKV (250 Mo maximum). YuNet détecte les visages sur l’image, quatre recadrages agrandis et, pour les scènes sombres, une copie au contraste rehaussé. Seules les zones autour des visages détectés sont pixelisées, avec une marge et un suivi court des visages entre images ; le reste de l’image demeure net. Le traitement peut prendre plus longtemps. Le modèle (environ 233 Ko) est téléchargé une fois depuis OpenCV Zoo.</p>
+        <div class="notice">Un détecteur peut encore manquer un visage, notamment s’il est masqué, très petit, flou ou hors champ. La marge et le suivi court réduisent les contours exposés et les trous entre images, mais ne protègent pas un visage jamais détecté. Vérifiez visuellement la vidéo complète avant tout partage ; le traitement automatique ne garantit pas à lui seul la conformité RGPD.</div>
         <div class="row" style="margin-top:13px">
           <input id="videoFile" type="file" accept="video/mp4,video/avi,video/quicktime,video/x-matroska">
-          <select id="blurMode" aria-label="Mode de floutage"><option value="whole_frame">Flouter toute l’image (protection la plus forte)</option><option value="faces">YuNet + mosaïque des visages</option></select>
           <button id="anonymize">Traiter et télécharger</button>
         </div>
         <div id="videoStatus" class="status" aria-live="polite"></div>
@@ -154,12 +153,12 @@
       setBusy(button, true, "Traitement local…");
       try {
         const form = new FormData(); form.append("video", file);
-        const response = await fetch("/api/anonymize", {method:"POST",headers:{"X-Blur-Mode":byId("blurMode").value},body:form});
+        const response = await fetch("/api/anonymize", {method:"POST",body:form});
         if (!response.ok) { const error = await response.json(); throw new Error(error.error || "Traitement échoué."); }
         const blob = await response.blob(), url = URL.createObjectURL(blob), link = document.createElement("a");
         link.href = url; link.download = file.name.replace(/\.[^.]+$/, "") + "_anonymisee.mp4"; link.click(); URL.revokeObjectURL(url);
         const detected = response.headers.get("X-Detected-Faces");
-        status.textContent = byId("blurMode").value === "faces" ? `YuNet : ${detected} détections sur ${response.headers.get("X-Processed-Frames")} images, mosaïque pixelisée. Vérification humaine obligatoire.` : "Image entière floutée. Vérifiez le résultat avant tout partage.";
+        status.textContent = `YuNet : ${detected} détections sur ${response.headers.get("X-Processed-Frames")} images, mosaïque pixelisée. Vérification humaine obligatoire.`;
       } catch (error) { status.textContent = error.message; }
       finally { setBusy(button, false); }
     });

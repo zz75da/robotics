@@ -280,10 +280,7 @@ class Handler(BaseHTTPRequestHandler):
         filename = Path(upload.get_filename() or "video.avi").name
         if Path(filename).suffix.lower() not in (".mp4", ".avi", ".mov", ".mkv"):
             raise RequestError(HTTPStatus.BAD_REQUEST, "Formats vidéo acceptés : MP4, AVI, MOV, MKV.")
-        mode = str(self.headers.get("X-Blur-Mode", "whole_frame"))
-        if mode not in ("whole_frame", "faces"):
-            raise RequestError(HTTPStatus.BAD_REQUEST, "Mode de floutage inconnu.")
-        output, frames, detections = anonymize_video(upload.get_payload(decode=True) or b"", mode)
+        output, frames, detections = anonymize_video(upload.get_payload(decode=True) or b"")
         safe_name = re.sub(r"[^A-Za-z0-9_.-]", "_", Path(filename).stem)[:80] or "video"
         self.send_response(HTTPStatus.OK)
         self.send_header("Content-Type", "video/mp4")
